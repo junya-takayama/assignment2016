@@ -5,6 +5,6 @@ f1 = open(list[1],'r')
 
 for line in f1:
     if line.find(list[2]) >= 0:
-        print (line)
+        print (line,end='')
 
 f1.close()
