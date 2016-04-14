@@ -1,14 +1,9 @@
 import sys
 from nltk.tokenize import word_tokenize, sent_tokenize
 
-argv = sys.argv
-
-#sent_tokenized = sent_tokenize(open(argv[1]).read())
-#word_tokenized = []
-
 count = {}
 index = {}
-for sent in sent_tokenize(open(argv[1]).read()):
+for sent in sent_tokenize(open(sys.argv[1]).read()):
     for word in word_tokenize(sent):
         if word in count:
             count[word] +=1
