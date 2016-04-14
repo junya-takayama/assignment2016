@@ -1,0 +1,11 @@
+import sys
+import nltk
+from nltk.tokenize import word_tokenize, sent_tokenize
+from nltk.tag import SennaTagger
+
+argv = sys.argv
+
+sent_tokenized = sent_tokenize(open(argv[1].read())
+word_tokenized = word_tokenize(sent_tokenized[0])
+
+print(word_tokenized)

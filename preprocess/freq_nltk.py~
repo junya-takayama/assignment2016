@@ -1,0 +1,14 @@
+import sys
+from nltk.tokenize import word_tokenize, sent_tokenize
+
+argv = sys.argv
+
+sent_tokenized = sent_tokenize(open(argv[1]).read())
+
+word_tokenized = []
+for sent in sent_tokenized:
+    word_tokenized.extend(word_tokenize(sent))
+
+
+
+print(word_tokenized)
