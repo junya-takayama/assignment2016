@@ -15,11 +15,19 @@ def searchpy(drc,files):
             searchpy(aDrc,files)
     return files
 
-def copy(file,cpdir):
+def copy(file,cpdir,upflg):
     #@file　で指定されたパスのファイルを、@cpdir　で指定されたパスのディレクトリに複製する
 
     dirpath = os.path.dirname(cpdir+file)
-    choice = input(file+':コピーしますか？\'y\' or \'n\'==> ').lower()
+
+    if os.path.exists(cpdir+file) is False:
+        choice = input(file+':Copy? \'y\' or \'n\'==> ').lower()
+    elif os.path.exists(cpdir+file) is True and upflg is True:
+        choice = input(file+':Update? \'y\' or \'n\'==> ').lower()
+    else:
+        choice = 'y'
+        print(file)
+
     if choice in ['y','yes']:
         if os.path.exists(dirpath) is False:
             os.makedirs(dirpath)
@@ -30,7 +38,9 @@ def copy(file,cpdir):
         message = 'コピー完了'
     else:
         message = 'コピー中止'
+
     return message
 
+flg = True if len(sys.argv) == 3 else False
 for file in searchpy(sys.argv[1],[]):
-    print(copy(file,'../github/assignment2016/')+'\n')
+    print(copy(file,'/home/takayama.13055/github/assignment2016/',flg)+'\n')
