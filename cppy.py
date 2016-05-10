@@ -21,9 +21,9 @@ def copy(file,cpdir,upflg):
     dirpath = os.path.dirname(cpdir+file)
 
     if os.path.exists(cpdir+file) is False:
-        choice = input(file+':Copy? \'y\' or \'n\'==> ').lower()
+        choice = input(file+':Copy? \t\'y\' or \'n\'==> ').lower()
     elif os.path.exists(cpdir+file) is True and upflg is True:
-        choice = input(file+':Update? \'y\' or \'n\'==> ').lower()
+        choice = input(file+':Update? \t\'y\' or \'n\'==> ').lower()
     else:
         choice = 'y'
         print(file)

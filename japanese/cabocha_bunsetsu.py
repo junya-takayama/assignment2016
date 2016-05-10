@@ -1,6 +1,5 @@
 # -*- coding:utf-8 -*-
 import CaboCha
-import re
 
 c = CaboCha.Parser()
 
