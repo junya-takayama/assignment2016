@@ -11,16 +11,22 @@ count = {}
 index = {}
 
 for line in f_line:
+    count = {}
     for sent in jp_sent_tokenizer.tokenize(line.strip()):
         node = mecab.parseToNode(sent)
         node = node.next
         while node.next:
-            
             if node.surface in count:
                 count[node.surface] += 1
             else:
                 count[node.surface] = 1
-                index[node.surface] = len(count)
-            print(str(index[node.surface])+":"+str(count[node.surface]),end=' ')
+                if not node.surface in index:
+                    index[node.surface] = len(index)+1
             node = node.next
+    vector= []
+    for key, num in sorted(count.items(), key = lambda x:x[1]):
+        vector.append([index[key],num])
+    vector.sort()
+    for i ,c in vector:
+        print(str(i)+":"+str(c),end=' ')
     print()
