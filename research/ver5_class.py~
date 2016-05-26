@@ -1,4 +1,6 @@
-
+"""
+クラスを利用してみた
+"""
 import sys
 import xml.etree.ElementTree as et
 import re
@@ -16,11 +18,20 @@ class Sentence:
         self.ccg = dic_ccg
 
 def reCcg(cat):
+    """
+    カテゴリから余分な情報を削除しておく
+    """
     cat = re.sub(u'\[.*?\]','',cat)
     cat = cat.replace('\\','＼')
     return cat
 
 def getInfo():
+    """
+    各<span>とそれに対応する<token>の属性をまとめてインスタンス化
+    インスタンス変数の名前は属性の名前と同一
+    @dic_sent : {文のID:対応するインスタンス}
+    @dic_ccg  : {統語範疇のID:対応するインスタンス}
+    """
     dic_sent = OrderedDict()
     dic_ccg = OrderedDict()
     for sent in tree.iter('sentence'):
@@ -41,6 +52,12 @@ def getInfo():
     return dic_sent,dic_ccg
 
 def printCcgTree(span_id,c):
+    """
+    CCGツリーを表示。
+    @span_idで指定されたIDを持つノードに対し、
+    @cで与えられた階層分だけインデントしてカテゴリと表層を表示する。
+    そのノードが持つ、子ノードのIDと、一つ深くした階層を引数に再帰的に同関数を呼び出す。
+    """
     node = ccg[span_id]
     line = re.sub(u's.*?_','',span_id).ljust(5)
     for i in range(0,c):
