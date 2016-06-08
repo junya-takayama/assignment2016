@@ -1,60 +1,141 @@
 import sys
+import time
+import random
+import math
+from optparse import OptionParser
+"""
+exec:1000  acc:82.5% time:02m07s
+exec:5000  acc:82.5% time:15m53s
+exec:10000 acc:      time:
+"""
 
 def read_instance(review):
     #2.8.1
-    l_line = review.strip().split(" ")
+    l_line = review.strip().split(' ')
     l_fv = []
-    label= l_line[0]
+    label= int(l_line[0])
     del l_line[0]
+    append = l_fv.append
+    sum_c = 0
     for fv in l_line:
-        elem = fv.split(":")
-        elem[0] = int(elem[0])
-        elem[1] = float(elem[1])
-        elem = tuple(elem)
-        l_fv.append(elem)
+        i,c = fv.split(":")
+        i = int(i)
+        c = int(c)
+        sum_c += c*c
+        append([i,c])
+    norm = math.sqrt(sum_c) if(options.normalize==True) else 1
+    for i in range(len(l_fv)):
+        index,count = l_fv[i]
+        l_fv[i] = (index,count/norm)
+    if(options.bias==True):
+        append((0,1))
     return (label,l_fv)
 
 def read_data(data):
     #2.8.2
-    l_instance = []
     v_max = 0
-    for review in open(data,'r').readlines():
-        instance = read_instance(review)
-        l_instance.append(instance)
-        #2.8.3
-        for fv in instance[1]:
-            if int(fv[0]) > int(v_max):
-                v_max = int(fv[0])
+    l_instance = [read_instance(review) for review in open(data)]
+
+    for i in range(len(l_instance)):
+        tmp_max = max(l_instance[i][1],key=lambda x: x[0])[0]
+        v_max = max(v_max,tmp_max)
+    
     return l_instance,v_max
 
-def add_fv(fv):
+def add_fv(l_fv):
     #2.8.5
-    for v in fv:
-        weight[v[0]] += v[1]
+    for index,count in l_fv:
+        weight[index] += count
 
-def sub_fv(fv):
+def sub_fv(l_fv):
     #2.8.5
-    for v in fv:
-        weight[v[0]] -= v[1]
+    for index,count in l_fv:
+        weight[index] -= count
 
-def mult_fv(fv):
+def add_fv_tmp(l_fv):
+    for index,count in l_fv:
+        tmp_weight[index] += count*nupdates
+
+def sub_fv_tmp(l_fv):
+    for index,count in l_fv:
+        tmp_weight[index] -= count*nupdates
+
+def mult_fv(l_fv,weight):
     #2.8.6
     mult = 0
-    for v in fv:
-        if(max_index < v[0]):
+    for index,count in l_fv:
+        if index > train_max:
             continue
-        mult += weight[v[0]] * v[1]
+        mult += weight[index] * count
     return mult
 
+def averaged_weight(nupdates):
+    for i in range(len(ave_weight)):
+        ave_weight[i] = weight[i] - tmp_weight[i]/(nupdates+1)
+    return ave_weight
+
+def update_weight(train_data,nupdates):
+    #random.shuffle(train_data)
+    rand = [i for i in range(len(train_data))]
+    random.shuffle(rand)
+    train_shuffled = [train_data[i] for i in rand]
+    #train_data = train_shuffled
+
+    for label,l_fv in train_shuffled:
+        mult = mult_fv(l_fv,weight)
+        abs_mult = abs(mult)
+        if(mult*label <= 0 or abs_mult<=options.margin):
+            if(label > 0):
+                add_fv(l_fv)
+                add_fv_tmp(l_fv)
+            else:
+                sub_fv(l_fv)
+                sub_fv_tmp(l_fv)
+        nupdates+=1
+    ave_weight = averaged_weight(nupdates)
+    return train_shuffled,nupdates
+
+def evaluate(test_data,weight):
+    count = 0
+    correct = 0
+    for label,l_fv in test_data:
+        mult = mult_fv(l_fv,weight)
+        count += 1
+        if(mult * label > 0):
+            correct += 1
+    return correct,count,correct/count
+
 if __name__ == "__main__":
-    train_data,max_index = read_data(sys.argv[1])
-    
+    #add options(2.9.9)
+    usage = "usage: %prog [options] keyword"
+    p = OptionParser(usage)
+    p.add_option('-u',dest='update',default='1000',type='int',help='Num of times (updating)')
+    p.add_option('-b',dest='bias',default='False',action='store_true',help='set bias terms')
+    p.add_option('-n',dest='normalize',default='False',action='store_true',help='normalize the weight by L2 Norm')
+    p.add_option('-m',dest='margin',default='0',type='float',help='set the margin')
+    p.add_option('-a',dest='average',default='False',action='store_true',help='evaluate by averaged weight')
+    options,args = p.parse_args()
+
+    start = time.time()
+    train_data,train_max = read_data(sys.argv[1])
+    test_data,test_max = read_data(sys.argv[2])
     #2.8.4
-    weight = [0]*(max_index+1)
-    
-    for instance in train_data:
-        lavel, fv = instance
-        add_fv(fv)
-        print(mult_fv(fv))
-    print(weight)
-          
+    weight = [0]*(train_max+1)
+    tmp_weight = [0]*(train_max+1)
+    ave_weight = [0]*(train_max+1)
+    nupdates = 1
+    random.seed(0)
+    for i in range(options.update):
+        train_data,nupdates = update_weight(train_data,nupdates)
+
+    if(options.average==True):
+        correct,count,accuracy = evaluate(test_data,ave_weight)
+    else:
+        correct,count,accuracy = evaluate(test_data,weight)
+    print('correct'.ljust(9),':',correct)
+    print('count'.ljust(9),':',count)
+    print('accuracy'.ljust(9),':',accuracy)
+    elapsed_time = time.time() - start
+
+print('time'.ljust(9),':',elapsed_time)
+
