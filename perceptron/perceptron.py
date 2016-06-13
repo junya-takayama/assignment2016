@@ -4,8 +4,8 @@ import random
 import math
 from optparse import OptionParser
 """
-exec:1000  acc:82.5% time:02m07s
-exec:5000  acc:82.5% time:15m53s
+exec:1000  acc:82.5% time:02m04s
+exec:5000  acc:82.5% time:9m58s
 exec:10000 acc:      time:
 """
 
@@ -24,40 +24,30 @@ def read_instance(review):
         sum_c += c*c
         append([i,c])
     norm = math.sqrt(sum_c) if(options.normalize==True) else 1
-    for i in range(len(l_fv)):
-        index,count = l_fv[i]
-        l_fv[i] = (index,count/norm)
+    l_fv_norm = [(index,count/norm) for index,count in l_fv]
     if(options.bias==True):
         append((0,1))
-    return (label,l_fv)
+    return (label,l_fv_norm)
 
 def read_data(data):
     #2.8.2
     v_max = 0
     l_instance = [read_instance(review) for review in open(data)]
-
     for i in range(len(l_instance)):
         tmp_max = max(l_instance[i][1],key=lambda x: x[0])[0]
-        v_max = max(v_max,tmp_max)
-    
+        v_max = max(v_max,tmp_max)    
     return l_instance,v_max
 
 def add_fv(l_fv):
     #2.8.5
     for index,count in l_fv:
         weight[index] += count
+        tmp_weight[index] += count*nupdates
 
 def sub_fv(l_fv):
     #2.8.5
     for index,count in l_fv:
         weight[index] -= count
-
-def add_fv_tmp(l_fv):
-    for index,count in l_fv:
-        tmp_weight[index] += count*nupdates
-
-def sub_fv_tmp(l_fv):
-    for index,count in l_fv:
         tmp_weight[index] -= count*nupdates
 
 def mult_fv(l_fv,weight):
@@ -70,9 +60,8 @@ def mult_fv(l_fv,weight):
     return mult
 
 def averaged_weight(nupdates):
-    for i in range(len(ave_weight)):
-        ave_weight[i] = weight[i] - tmp_weight[i]/(nupdates+1)
-    return ave_weight
+    local_ave_weight = [weight[i] - tmp_weight[i]/(nupdates+1) for i in range(len(weight))]
+    return local_ave_weight
 
 def update_weight(train_data,nupdates):
     #random.shuffle(train_data)
@@ -83,17 +72,17 @@ def update_weight(train_data,nupdates):
 
     for label,l_fv in train_shuffled:
         mult = mult_fv(l_fv,weight)
-        abs_mult = abs(mult)
-        if(mult*label <= 0 or abs_mult<=options.margin):
+        if(mult*label <= options.margin):
             if(label > 0):
                 add_fv(l_fv)
-                add_fv_tmp(l_fv)
             else:
                 sub_fv(l_fv)
-                sub_fv_tmp(l_fv)
         nupdates+=1
-    ave_weight = averaged_weight(nupdates)
-    return train_shuffled,nupdates
+    if(options.average==True):
+        ave_weight = averaged_weight(nupdates)
+    else:
+        ave_weight = []
+    return train_shuffled,nupdates,ave_weight
 
 def evaluate(test_data,weight):
     count = 0
@@ -121,12 +110,14 @@ if __name__ == "__main__":
     test_data,test_max = read_data(sys.argv[2])
     #2.8.4
     weight = [0]*(train_max+1)
+
     tmp_weight = [0]*(train_max+1)
-    ave_weight = [0]*(train_max+1)
     nupdates = 1
+
     random.seed(0)
+
     for i in range(options.update):
-        train_data,nupdates = update_weight(train_data,nupdates)
+        train_data,nupdates,ave_weight = update_weight(train_data,nupdates)
 
     if(options.average==True):
         correct,count,accuracy = evaluate(test_data,ave_weight)
@@ -137,5 +128,5 @@ if __name__ == "__main__":
     print('accuracy'.ljust(9),':',accuracy)
     elapsed_time = time.time() - start
 
-print('time'.ljust(9),':',elapsed_time)
+    print('time'.ljust(9),':',elapsed_time)
 
